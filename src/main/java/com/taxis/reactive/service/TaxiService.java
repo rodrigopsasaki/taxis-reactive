@@ -1,9 +1,10 @@
 package com.taxis.reactive.service;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
-import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -15,8 +16,6 @@ import com.taxis.reactive.utils.PathUtils;
 
 @Service("taxiService")
 public class TaxiService {
-
-  private static final Logger LOGGER = Logger.getLogger(TaxiService.class);
 
   @Autowired
   private Grid grid;
@@ -30,28 +29,24 @@ public class TaxiService {
   public void assignTaxiToPassengers(List<Passenger> passengers) {
     passengers.stream()
         .filter(p -> !p.isAssigned())
-        .forEach(p -> assignTaxiToPassenger(p));
+        .forEach(this::assignTaxiToPassenger);
   }
 
-  public TaxiPath findClosestFreeTaxi(Locatable location) {
+  public Optional<TaxiPath> findClosestFreeTaxi(Locatable location) {
     return taxis.stream()
-        .filter(t -> t.isFree())
+        .filter(Taxi::isFree)
         .map(t -> new TaxiPath(t, PathUtils.shortestPath(grid, t.getLocation(), location)))
-        .filter(tp -> tp.getPath() != null)
-        .min((t1, t2) -> t1.size() - t2.size())
-        .orElse(null);
+        .filter(tp -> !tp.getPath().isEmpty())
+        .min(Comparator.comparingInt(TaxiPath::size));
   }
 
   public void assignTaxiToPassenger(Passenger passenger) {
     Locatable location = passenger.getLocation();
-    TaxiPath taxiPath = findClosestFreeTaxi(location);
-    if (taxiPath != null) {
+    findClosestFreeTaxi(location).ifPresent(taxiPath -> {
       Taxi taxi = taxiPath.getTaxi();
       taxi.pickupPassenger(passenger, taxiPath.getPath());
       passenger.assign();
-    } else {
-      LOGGER.info("There are no available taxis to perform this run");
-    }
+    });
   }
 
   public void addTaxi(Taxi taxi) {
@@ -63,7 +58,7 @@ public class TaxiService {
   }
 
   public void performStep() {
-    taxis.forEach(t -> t.performStep());
+    taxis.forEach(Taxi::performStep);
   }
 
   public List<Taxi> getTaxis() {
