@@ -12,7 +12,7 @@ This application is an agent-based system created to simulate a world where ther
 
 -------------
 
-## Sistema
+## System
 
 - The system was developed in the Java platform, using spring-boot fir injection and reactive web Spring for the REST interface
 - There is no persistence whatsoever, every processing happens in memory
