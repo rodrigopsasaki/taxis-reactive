@@ -13,3 +13,5 @@ target/
 *.iws
 .idea/
 idea/
+
+.mvn/
